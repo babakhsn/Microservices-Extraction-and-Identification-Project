@@ -25,11 +25,17 @@ class NecessaryInformation(Enum):
     OUTPUT_EXCEL_FILE = "C:/Thesis V4/Report/repositories-summary.xlsx"  # Path for Excel file
 
 
+class DataHandler():
+    def __init__(self):
+        self.summary_data = []
 
+
+        
 class Crawler():
     def __init__(self, token):
         self.token = token
-        HEADERS = {"Authorization": f"token {self.token}"}
+        self.HEADERS = {"Authorization": f"token {self.token}"}
+        self.countOfRepositories = 0
     
 
 
