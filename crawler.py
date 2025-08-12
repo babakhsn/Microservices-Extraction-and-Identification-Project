@@ -26,11 +26,55 @@ DELAY_BETWEEN_QUERIES = 10  # Delay to avoid rate limits
 OUTPUT_FOLDER = "C:\Thesis V3\Output"  # Folder for storing ZIP files
 OUTPUT_CSV_FILE = "C:/Thesis V3/repositories-for-microservices.csv"  # Path for CSV file
 OUTPUT_EXCEL_FILE = "C:/Thesis V3/repositories-summary.xlsx"  # Path for Excel file
+
+
+
 # Functions 
+def repository_downloader(item):
+    user = item['owner']['login']
+    repository = item['name']
+    repo_url = item['clone_url']
+    topics = item.get('topics', [])
+
+    countOfRepositories = 0
+
+    # Check if "microservices" is indeed listed as a topic
+    if "microservices" in topics:
+        print(f"Downloading repository '{repository}' from user '{user}'...")
+        fileToDownload = repo_url[:-4] + "/archive/refs/heads/master.zip"
+        fileName = item['full_name'].replace("/", "#") + ".zip"
+
+        # Try downloading the ZIP file and logging the result
+        try:
+            wget.download(fileToDownload, out=OUTPUT_FOLDER + "/" + fileName)
+            repositories.writerow([user, repository, repo_url, "downloaded"])
+            period_download_count += 1
+        except Exception as e:
+            print(f"Could not download file {fileToDownload}")
+            print(e)
+            not_downloaded_repositories += 1
+            repositories.writerow([user, repository, repo_url, "error when downloading"])
+
+        
+        countOfRepositories += 1
+        return countOfRepositories
+    else:
+        print(f"Skipping '{repository}' as it does not have the 'microservices' topic.")
+        return None
+    
+
+
+
 def getUrl(url):
     """ Given a URL it returns its body """
     response = requests.get(url, headers=HEADERS)
     return response.json()
+
+
+def data_fetcher(currentPage, url):
+    paged_url = url + "&page=" + str(currentPage)
+    data = getUrl(paged_url)
+    return data
 
 # Counter for processed repositories
 countOfRepositories = 0
@@ -69,38 +113,11 @@ while start_date < finish_date:
     # Process each page of results for the current date range
     for currentPage in range(1, numberOfPages + 1):
         print(f"Processing page {currentPage} of {numberOfPages}...")
-        paged_url = url + "&page=" + str(currentPage)
-        data = getUrl(paged_url)
+        data = data_fetcher(currentPage=currentPage, url=url)
         
         # Loop through each repository on the current page
         for item in data.get('items', []):
-            user = item['owner']['login']
-            repository = item['name']
-            repo_url = item['clone_url']
-            topics = item.get('topics', [])
-
-            # Check if "microservices" is indeed listed as a topic
-            if "microservices" in topics:
-                print(f"Downloading repository '{repository}' from user '{user}'...")
-                fileToDownload = repo_url[:-4] + "/archive/refs/heads/master.zip"
-                fileName = item['full_name'].replace("/", "#") + ".zip"
-
-                # Try downloading the ZIP file and logging the result
-                try:
-                    wget.download(fileToDownload, out=OUTPUT_FOLDER + "/" + fileName)
-                    repositories.writerow([user, repository, repo_url, "downloaded"])
-                    period_download_count += 1
-                except Exception as e:
-                    print(f"Could not download file {fileToDownload}")
-                    print(e)
-                    not_downloaded_repositories += 1
-                    repositories.writerow([user, repository, repo_url, "error when downloading"])
-
-                
-                countOfRepositories += 1
-            else:
-                print(f"Skipping '{repository}' as it does not have the 'microservices' topic.")
-        
+            countOfRepositories += repository_downloader(item)
         # Delay between pages to comply with rate limits
         print(f"Sleeping {DELAY_BETWEEN_QUERIES} seconds before the next page...")
         time.sleep(DELAY_BETWEEN_QUERIES)
@@ -112,6 +129,10 @@ while start_date < finish_date:
     # Move to the next 6-month period
     start_date = end_date + timedelta(days=1)
     end_date = start_date + timedelta(days=182)  # Move 6 months ahead
+
+
+
+
 
 
 
