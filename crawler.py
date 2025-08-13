@@ -23,20 +23,32 @@ URL = "https://api.github.com/search/repositories?q="  # Base URL for GitHub API
 QUERY = "topic:microservices"  # Query to filter repositories with "microservices" topic
 PARAMETERS = "&per_page=100"  # Default 100 items per page
 DELAY_BETWEEN_QUERIES = 10  # Delay to avoid rate limits
-OUTPUT_FOLDER = "C:\Thesis V3\Output"  # Folder for storing ZIP files
-OUTPUT_CSV_FILE = "C:/Thesis V3/repositories-for-microservices.csv"  # Path for CSV file
-OUTPUT_EXCEL_FILE = "C:/Thesis V3/repositories-summary.xlsx"  # Path for Excel file
+OUTPUT_FOLDER = "C:\Thesis V4\Output"  # Folder for storing ZIP files
+OUTPUT_CSV_FILE = "C:/Thesis V4/Report/repositories-for-microservices.csv"  # Path for CSV file
+OUTPUT_EXCEL_FILE = "C:/Thesis V4/Report/repositories-summary.xlsx"  # Path for Excel file
 
 
 
 # Functions 
 def repository_downloader(item):
-    user = item['owner']['login']
-    repository = item['name']
-    repo_url = item['clone_url']
-    topics = item.get('topics', [])
+    # user = item['owner']['login']
+    # repository = item['name']
+    # repo_url = item['clone_url']
+    # topics = item.get('topics', [])
+    # countOfRepositories = 0
+    # not_downloaded_repositories = 0
+    # period_download_count = 0  # Counter for this period
+    user, repository, repo_url, topics, countOfRepositories, not_downloaded_repositories, period_download_count = (
+        item['owner']['login'],
+        item['name'],
+        item['clone_url'],
+        item.get('topics', []),
+        0,
+        0,
+        0
+    )
 
-    countOfRepositories = 0
+    print(period_download_count)
 
     # Check if "microservices" is indeed listed as a topic
     if "microservices" in topics:
@@ -57,10 +69,10 @@ def repository_downloader(item):
 
         
         countOfRepositories += 1
-        return countOfRepositories
+        return period_download_count, not_downloaded_repositories, countOfRepositories
     else:
         print(f"Skipping '{repository}' as it does not have the 'microservices' topic.")
-        return None
+        return 0, 0, 0
     
 
 
@@ -71,10 +83,13 @@ def getUrl(url):
     return response.json()
 
 
+
 def data_fetcher(currentPage, url):
     paged_url = url + "&page=" + str(currentPage)
     data = getUrl(paged_url)
     return data
+
+
 
 # Counter for processed repositories
 countOfRepositories = 0
@@ -117,7 +132,11 @@ while start_date < finish_date:
         
         # Loop through each repository on the current page
         for item in data.get('items', []):
-            countOfRepositories += repository_downloader(item)
+            period_download_count_f, not_downloaded_repositories_f, countOfRepositories_f = repository_downloader(item)
+            period_download_count += period_download_count_f
+            not_downloaded_repositories += not_downloaded_repositories_f
+            countOfRepositories += countOfRepositories_f
+
         # Delay between pages to comply with rate limits
         print(f"Sleeping {DELAY_BETWEEN_QUERIES} seconds before the next page...")
         time.sleep(DELAY_BETWEEN_QUERIES)

@@ -118,7 +118,38 @@ class Crawler():
             end_date = start_date + timedelta(days=182)  # Move 6 months ahead
         
         
-    
+
+
+def repository_downloader(item):
+    user = item['owner']['login']
+    repository = item['name']
+    repo_url = item['clone_url']
+    topics = item.get('topics', [])
+
+    countOfRepositories = 0
+    # Check if "microservices" is indeed listed as a topic
+    if "microservices" in topics:
+        logging.info(f"Downloading repository '{repository}' from user '{user}'...")
+        fileToDownload = repo_url[:-4] + "/archive/refs/heads/master.zip"
+        fileName = item['full_name'].replace("/", "#") + ".zip"
+
+        # Try downloading the ZIP file and logging the result
+        try:
+            wget.download(fileToDownload, out=OUTPUT_FOLDER + "/" + fileName)
+            repositories.writerow([user, repository, repo_url, "downloaded"])
+            period_download_count += 1
+        except Exception as e:
+            logging.info(f"Could not download file {fileToDownload}")
+            logging.info(e)
+            not_downloaded_repositories += 1
+            repositories.writerow([user, repository, repo_url, "error when downloading"])
+
+        
+        countOfRepositories += 1
+    else:
+        logging.info(f"Skipping '{repository}' as it does not have the 'microservices' topic.")
+
+
 
 
 # Constants 
