@@ -27,28 +27,20 @@ OUTPUT_FOLDER = "C:\Thesis V4\Output"  # Folder for storing ZIP files
 OUTPUT_CSV_FILE = "C:/Thesis V4/Report/repositories-for-microservices.csv"  # Path for CSV file
 OUTPUT_EXCEL_FILE = "C:/Thesis V4/Report/repositories-summary.xlsx"  # Path for Excel file
 
-
-
-# Functions 
-def repository_downloader(item):
-    # user = item['owner']['login']
-    # repository = item['name']
-    # repo_url = item['clone_url']
-    # topics = item.get('topics', [])
-    # countOfRepositories = 0
-    # not_downloaded_repositories = 0
-    # period_download_count = 0  # Counter for this period
-    user, repository, repo_url, topics, countOfRepositories, not_downloaded_repositories, period_download_count = (
+def initialize_variables_for_repository_downloader(item):
+    return (
         item['owner']['login'],
         item['name'],
         item['clone_url'],
         item.get('topics', []),
-        0,
-        0,
-        0
+        0,  # countOfRepositories
+        0,  # not_downloaded_repositories
+        0   # period_download_count
     )
 
-    print(period_download_count)
+# Functions 
+def repository_downloader(item):
+    user, repository, repo_url, topics, countOfRepositories, not_downloaded_repositories, period_download_count = initialize_variables_for_repository_downloader(item)
 
     # Check if "microservices" is indeed listed as a topic
     if "microservices" in topics:
